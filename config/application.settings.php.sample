@@ -1,0 +1,60 @@
+<?php
+$settings=array();
+$settings['session_expire_time']=1440;//--mins
+
+define('LSS_ID',7);
+define('EPS_ID',8);
+define('FORD_GROUP_ID',1);
+
+//-----define Position in app. Support Up to Ten department
+define('POS_EMP',1);//bit 0 0001
+define('POS_MNG',2); //---Low level managers 0 0010
+define('POS_DP',4);//bit 0 0100
+define('POS_NA',8);//bit 0 1000
+define('POS_CON',16);//bit 0 1000
+define('POS_ADMIN',32);//bit 0 1000
+
+define('POS_ALL',1023); //1111111111
+
+//------define Department in app. Support Up to Ten department
+
+define('DEP_SALE',1); //---SALES DEPARTMENT//bit 0 0001
+define('DEP_FINANCE',2); // bit 0 0010
+define('DEP_AFTERMARKET',4);// bit 0 0100
+define('DEP_FLEET',8);// bit 0 1000
+define('DEP_SERVICE',16);// bit 1 0000
+
+
+define('DEP_ALL',1023); //1111111111
+
+
+
+//------define Authentication Const
+define('AUTH_POS_EMP',1); //bit 0 0001
+define('AUTH_POS_BM',2); //---business manager bit 0 0010
+define('AUTH_POS_DP',4);//bit 0 0100
+define('AUTH_POS_NA',6);//bit 0 1000
+define('AUTH_POS_CON',16);//bit 0 1000
+define('AUTH_ADMIN',32);//bit 0 1000
+
+define('AUTH_DEP_SALES',1); //---SALES DEPARTMENT //bit 0 0001
+define('AUTH_DEP_FINANCE',2); // bit 0 0010
+define('AUTH_DEP_AFTERMARKET',4); // bit 0 0100
+define('AUTH_DEP_FLEET',6);// bit 0 1000
+define('AUTH_DEP_SERVICE',8);// bit 1 0000
+//----------------------------------------------------
+
+
+define('CALENDAR_REPEAT_DAY',4);
+define('CALENDAR_REPEAT_WEEK',5);
+define('CALENDAR_REPEAT_MONTH',6);
+define('CALENDAR_REPEAT_YEAR',7);
+
+
+
+define('JOURNAL_QUESTION_NUMBER',4);
+define('JOURNAL_REQUIRED_DAYS',14);
+
+
+define('SYSTEM_EMAIL_FROM_ADDRESS','salesAccelerator@fusion-solutions.com.au');
+?>

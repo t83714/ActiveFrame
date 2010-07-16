@@ -1,0 +1,15 @@
+<?php
+
+//----default Controller name and default request method name
+$defaultRequestController='login';
+$defaultRequestMethod='index';
+
+//-----if framework works under debug mode
+$debug=true;
+
+
+//----application's time_zone  
+$time_zone='Australia/South';
+
+
+?>

@@ -1,0 +1,21 @@
+<?php
+
+
+$activeGroup='defaultSetting';//---which setting'll be load
+
+$db['defaultSetting']['hostname'] = "localhost";
+$db['defaultSetting']['username'] = "root";
+$db['defaultSetting']['password'] = "";
+$db['defaultSetting']['database'] = "ford_lost_sales";
+$db['defaultSetting']['dbdriver'] = "mysql";
+$db['defaultSetting']['pconnect'] = 0;
+
+
+$db['defaultSetting1']['hostname'] = "localhost";
+$db['defaultSetting1']['username'] = "root";
+$db['defaultSetting1']['password'] = "";
+$db['defaultSetting1']['database'] = "ford_lost_sales";
+$db['defaultSetting1']['dbdriver'] = "mysql";
+$db['defaultSetting1']['pconnect'] = 0;
+
+?>

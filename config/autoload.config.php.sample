@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * this config file is for setting libs which will be auto load into system
+ * @package config
+ * @example $autoloadJs[]='jslibname'; 'jslibname' is the name of the js lib
+ */
+
+$autoloadJs=array();
+
+$autoloadCss=array();
+
+
+?>
