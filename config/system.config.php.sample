@@ -11,5 +11,8 @@ $debug=true;
 //----application's time_zone  
 $time_zone='Australia/South';
 
+$default_url_rewrite_ext='html';
+$url_rewrite=true;
+$url_rewrite_directory_name='content';
 
 ?>

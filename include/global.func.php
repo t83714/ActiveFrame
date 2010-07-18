@@ -387,6 +387,16 @@ function redirect($uri = '', $method = 'location',$ifUrl=false)
 	appexit();
 }
 
+function transurl($path,$qs=null,$ext=null)
+{
+	global $APP_ENV;
+	$path=trim($path);
+	if($path) $path=preg_replace('/\/$/','',$path);
+	if($ext==null) $ext=$APP_ENV['default_url_rewrite_ext'];
+	if($APP_ENV['url_rewrite']) return $APP_ENV['baseUrl'].$APP_ENV['url_rewrite_directory_name'].'/'.($path?"$path.$ext":'').($qs?"?$qs":'');
+	else return $APP_ENV['baseUrl'].($path?"?path=$path":'?').($qs?"&$qs":'');
+}
+
 function getDebugInfo()
 {
 	global $APP_ENV;
