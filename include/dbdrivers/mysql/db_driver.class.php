@@ -10,7 +10,7 @@ if(!defined('IN_APP')) {
 	exit('Access Denied');
 }
 include APP_ROOT.'include/CActiveRecord.class.php';
-
+include APP_ROOT.'exceptions/CDBException.php';
 class dbstuff {
 	var $querynum = 0;
 	var $link;
@@ -142,7 +142,8 @@ class dbstuff {
 	{
 		global $APP_ENV;
 		define('CACHE_FORBIDDEN', TRUE);
-		require_once include APP_ROOT.'./include/dbdrivers/'.$APP_ENV['db_settings'][$APP_ENV['current_db_setting']]['dbdriver'].'/db_error.inc.php';
+		//require_once include APP_ROOT.'./include/dbdrivers/'.$APP_ENV['db_settings'][$APP_ENV['current_db_setting']]['dbdriver'].'/db_error.inc.php';
+		throw (new CDBException($this->errno(),$this->error(),$message,$sql));
 	}
 	
 	/*
