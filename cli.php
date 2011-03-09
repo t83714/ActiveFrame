@@ -20,16 +20,9 @@ define('PHP_CLOSE_TAG','?>');
 try{
 include APP_ROOT.'./include/common.inc.php';
 
-
 include APP_ROOT.'./include/CController.class.php';
 
-
-$expFiles=scandir(APP_ROOT.'./application/exceptions');
-foreach($expFiles as $exp) 
-	if(preg_match('/\.php$/',$exp)) include APP_ROOT.'./application/exceptions/'.$exp;
-unset($expFiles);
-
-if(!class_exists('C404Exception')) include APP_ROOT.'./include/C404Exception.php';
+if(!class_exists('C404Exception')) loadException('C404Exception');
 
 //-------------Route user Request-------------------------
 
@@ -38,21 +31,21 @@ if(!isset($_GET['path'])||$_GET['path']==='')
 {
 	$APP_ENV['controllerName']=$APP_ENV['defaultRequestController'];
 	$APP_ENV['controllerFile']=APP_CTR_ROOT.'C_'.$APP_ENV['controllerName'].'.php';
-	$APP_ENV['RequestMethod']=$APP_ENV['defaultRequestMethod'];
+	$APP_ENV['requestMethod']=$APP_ENV['defaultRequestMethod'];
 }else
 {
-	if(preg_match('/^(\w+)(\/\w+)*$/',$_GET['path'])==0) throw new C404Exception('incorrectUrl',$_GET['path']);
+	if(preg_match('/^(\w+)(\/\w+)*$/',$_GET['path'])==0) throw new C404Exception($_GET['path'],C404Exception::INVALID_URL);
 	else paserControllerPath();
 }
 
-if(!is_file($APP_ENV['controllerFile'])) throw new C404Exception('file','C_'.$APP_ENV['controllerName'].'.php');
+if(!is_file($APP_ENV['controllerFile'])) throw new C404Exception('C_'.$APP_ENV['controllerName'].'.php',C404Exception::CONTROLLER);
 include $APP_ENV['controllerFile'];
-if(!class_exists('C_'.$APP_ENV['controllerName'])) throw new C404Exception('class','C_'.$APP_ENV['controllerName']);
+if(!class_exists('C_'.$APP_ENV['controllerName'])) throw new C404Exception($APP_ENV['controllerName'],C404Exception::CONTROLLER);
 
 	$tmp_class_name='C_'.$APP_ENV['controllerName'];
 	$APP_ENV['controller']=new $tmp_class_name;
-	if(!method_exists($APP_ENV['controller'],$APP_ENV['RequestMethod'])) throw new C404Exception('method',$APP_ENV['RequestMethod']);
-	call_user_func(array($APP_ENV['controller'],$APP_ENV['RequestMethod']));
+	if(!method_exists($APP_ENV['controller'],$APP_ENV['requestMethod'])) throw new C404Exception($APP_ENV['requestMethod'],C404Exception::METHOD);
+	call_user_func(array($APP_ENV['controller'],$APP_ENV['requestMethod']));
 	
 }catch (Exception $e)
 {

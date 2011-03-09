@@ -7,6 +7,8 @@
 
 error_reporting(E_ALL ^ E_NOTICE);
 
+include APP_ROOT.'./include/CAppException.class.php';
+include APP_ROOT.'./include/CModel.class.php';
 
 //set_magic_quotes_runtime(0);
 $mtime = explode(' ', microtime());
@@ -32,7 +34,10 @@ $APP_ENV['curLang']='defaultLang';
 $APP_ENV['languageDictionary']=array();
 $APP_ENV['globalLanguageVar']=array();
 $APP_ENV['languageOptionHtml']='';
-$APP_ENV['baseUrl']='http://'.$_SERVER["SERVER_NAME"].substr_replace($_SERVER["SCRIPT_NAME"],'',-9);
+$ps=empty($_SERVER['HTTPS'])?'':($_SERVER['HTTPS'] == "on")?'s':'';
+$port=(($_SERVER['SERVER_PORT']=='80'&& $ps=='') || ($_SERVER['SERVER_PORT']=='443'&& $ps=='s'))?'':(':'.$_SERVER['SERVER_PORT']);
+$APP_ENV['baseUrl']='http'.$ps.'://'.$_SERVER['SERVER_NAME'].$port.preg_replace('/\/[^\/]*(\?.*)*$/i','',$_SERVER['REQUEST_URI']).'/';
+unset($ps,$port);
 $APP_ENV['app_start_time']=$app_start_time;
 $APP_ENV['debugInfo']['curSql']='';
 $APP_ENV['debugInfo']['sqlStack']=array();
@@ -51,6 +56,7 @@ else{
 include APP_ROOT.'./include/global.func.php';
 
 include  APP_ROOT.'./config/autoload.config.php';
+
 if(isset($autoloadJs)) 
 {
 	foreach($autoloadJs as $js) loadJs($js);
@@ -74,8 +80,6 @@ if (isset($_REQUEST['GLOBALS']) OR isset($_FILES['GLOBALS'])) {
 foreach($_COOKIE as $_key => $_value) $_key{0} != '_' && $_COOKIE[$_key] = escapeSpecialChars($_value);
 foreach($_POST as $_key => $_value) $_key{0} != '_' && $_POST[$_key] = escapeSpecialChars($_value);
 foreach($_GET as $_key => $_value) $_key{0} != '_' && $_GET[$_key] = escapeSpecialChars($_value);
-
-
 
 include APP_ROOT.'./config/db.config.php';
 include APP_ROOT.'./include/dbdrivers/'.$db[$activeGroup]['dbdriver'].'/db_driver.class.php';
@@ -107,9 +111,5 @@ unset($defaultRequestMethod);
 include APP_ROOT.'./config/application.settings.php';
 if(isset($settings)&&is_array($settings)) foreach($settings as $key => $value) $APP_ENV['settings'][$key]=$value;
 unset($settings);
-
-include APP_ROOT.'./include/CAppException.class.php';
-
-include APP_ROOT.'./include/CModel.class.php';
 
 ?>

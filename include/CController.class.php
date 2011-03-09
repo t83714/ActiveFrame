@@ -13,25 +13,19 @@ class CController
 	* Controller constructor
 	* @author Jacky Jiang
 	**/
-	function CController($autoLangSupport=true)
+	function CController($auto_start_session=true,$auto_lang_support=true)
 	{
+		if($auto_start_session) SessionManager::start();
+		loadLib('BrowserManager');
 		global $APP_ENV;
-		if($autoLangSupport==true)
+		if($auto_lang_support)
 		{
-			if(isset($_GET['lang'])) $APP_ENV['curLang']=$_GET['lang'];
-			else if(isset($_POST['lang'])) $APP_ENV['curLang']=$_POST['lang'];
-			else if(isset($_COOKIE['lang'])) $APP_ENV['curLang']=$_COOKIE['lang'];
-			else{
-				$tempArray=explode(',',$_SERVER["HTTP_ACCEPT_LANGUAGE"],1);
-				if($tempArray!==false) $APP_ENV['curLang']=$tempArray[0];
-				else $APP_ENV['curLang']='defaultLang';
-			}
-
-			if(!isset($APP_ENV['supportLangList']) ||array_key_exists($APP_ENV['curLang'],$APP_ENV['supportLangList'])===false) $APP_ENV['curLang']='defaultLang';
+			BrowserManager::detect_language();
+			if(!isset($APP_ENV['supportLangList']) || array_key_exists($APP_ENV['curLang'],$APP_ENV['supportLangList'])===false) $APP_ENV['curLang']='defaultLang';
 			$this->loadGlobalLanguageFile();
 			$APP_ENV['languageOptionHtml']=$this->getLanguageOptionHtml();
 		}
-		//
+		
 	}
 	/**
 	* Loads the global language File

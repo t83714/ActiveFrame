@@ -1,89 +1,74 @@
 <?php
 /**
  * @author Jacky Jiang
- * @version 0.1.1
+ * @version 1.1.1
  */
 
 class CActiveRecord implements Iterator, ArrayAccess, Countable
 {
-	private $updateList=array();
-	public $bDeleted=false;
-
-	private $sql='';
-	private $table='';
-	public $newRecord=false;
-	private $record=array();
-	private $fieldNameList=array();
 	private $db;
-	public $tableSet;
-	private $idname='';
-	private $bIfUpdate=false;
-	private $bIfGetInsertId=false;
-	public $auto_escape=true;
 	
-	function __construct($tableSet,$record=null)
+	private $table;
+	private $data;
+	private $pks;//--- primary keys
+	private $fields;
+	private $updated_fields=array();
+	
+	private $is_new_record=false;
+	private $has_committed=true;
+	private $is_deleted=false;
+	
+	private $params;//--- $parametters for prepare SQL
+	
+	function __construct($table,$pks=null,$data=null)
 	{
 		global $APP_ENV;
 		$this->db=$APP_ENV['db'];
-		if(is_null($record))
-		{
-			$this->newRecord=true;
-			if(!is_string($tableSet)) throw new RuntimeException('ActiveRecord need $tableSet as string when insert mode!');
-			$this->table=$tableSet;
-			return;
-		}
-		$this->record=$record;
-		$this->tableSet=$tableSet;
-		$this->table=key($tableSet);
-		$this->idname=$tableSet[$this->table]['primarykeyName'];
-		$this->fieldNameList=array_keys($record);	
+		$this->table=trim($table);
+		if(empty($table)) throw new RuntimeException('Error@CActiveRecord::__construct: insufficient Parameters!');
+		if($data===null) $this->is_new_record=true;
+		else if(!is_array($data) || empty($data)) throw new RuntimeException('Error@CActiveRecord::__construct: incorrect raw record data type!');
+		else $this->data=$data;
+		
+		if(is_array($pks) && !empty($pks)) $this->pks=$pks;
+		else $this->pks=array('id');
 	}
 	
 	function __destruct()
 	{
-		if($this->bIfUpdate===false) $this->bIfUpdate=true;
-		else return;
-		if($this->bInsert===true && $this->newRecord===true) return;
-		$this->sql=$this->getSqlStatement($this->table);
-		if(!empty($this->sql)) $this->db->query($this->sql);
+		$this->commit();
+	}
+	
+	public function get_raw_data()
+	{
+		return $this->data;
 	}
 	
 	public function insert_id()
 	{
-		if($this->newRecord===false) return false;
-		if($this->bIfUpdate===false)
-		{
-			$this->bIfUpdate=true;
-			$this->sql=$this->getSqlStatement($this->table);
-			if(!empty($this->sql)) $this->db->query($this->sql);
-		}
-		if($this->bIfGetInsertId===false)
-		{
-			$this->id=$this->db->insert_id();
-			$this->bIfGetInsertId=true;
-		}
-		return $this->id;
-		
+		if(!$this->is_new_record) return null;
+		$this->commit();
+		return $this->db->insert_id();
 	}
 	
 	public function rewind() 
 	{
-	  reset($this->record);
+	  reset($this->data);
 	}
 
 	public function current() 
 	{
-	  return current($this->record);
+	  return current($this->data);
 	}
 	
 	public function key() 
 	{
-	  return key($this->record);
+	  return key($this->data);
 	}
 	
 	public function next() 
 	{
-	  return next($this->record);
+	  return next($this->data);
 	}
 	
 	public function valid() 
@@ -93,132 +78,164 @@ class CActiveRecord implements Iterator, ArrayAccess, Countable
 
 	public function key_exists($key)
 	{
-		return key_exists($key,$this->record);
+		return key_exists($key,$this->data);
 	}
 	
 	public function array_keys()
 	{
-		return array_keys($this->record);
+		return array_keys($this->data);
 	}
 	
 	public function array_values()
 	{
-		return array_values($this->record);
+		return array_values($this->data);
 	}
 	
+	public function count()
+	{
+		return count($this->data);
+	}
 	
 	public function offsetExists($n)
 	{
-		if(isset($this->record[$n])) return true;
+		if($this->is_deleted) return false;
+		if(isset($this->data[$n])) return true;
 		else return false;
 	}
 	
 	public function offsetGet($n)
 	{
-		if(isset($this->record[$n])) return $this->record[$n];
+		if($this->is_deleted) return NULL;
+		if(isset($this->data[$n])) return $this->data[$n];
 		else return NULL;
 	}
 	
 	public function offsetSet($name,$value)
 	{
-		if($this->newRecord===true)
-		{
-			
-			if(is_null($name)) throw new RuntimeException('Try to set undefined field: null in table:'.$this->table);
-			else $this->record[$name]=$value;
-			return;
-		}
-		if( in_array($name,$this->fieldNameList)) 
-		{
-			$this->record[$name]=$value;
-			$this->updateList[$name]=true;
-		}
+		if($this->is_deleted) return;
+		$name=trim($name);
+		if($name=='') return;
+		if(!$this->is_new_record && !array_key_exists($name,$this->data)) return;
+		$this->data[$name]=$value;
+		$this->updated_fields[$name]=$name;
+		$this->has_committed=false;
 	}
 	
 	public function offsetUnset($name)
 	{
-		if($this->newRecord===true)
-		{		
-			unset($this->record[$name]);
+		if($this->is_deleted) return;
+		$name=trim($name);
+		if($name=='') return;
+		if($this->is_new_record){
+			unset($this->data[$name]);
 			return;
 		}
-		if(isset($this->record[$name])) 
+		if(isset($this->data[$name])) 
 		{
-			unset($this->record[$name]);
-			$this->updateList[$name]=true;
+			$this->data[$name]=NULL;
+			$this->updated_fields[$name]=$name;
+			$this->has_committed=false;
 		}
 	}
 	
-	public function count()
+	private function get_where()
 	{
-		return count($this->record);
-	}
-	
-	private function pad($array,$leftStr,$rightStr=false)
-	{
-		if($rightStr===false) $rightStr=$leftStr;
-		
-		foreach($array as $key => $v) $array[$key]=$leftStr.$v.$rightStr;
-		return $array;
-	}
-	
-	private function compileSql()
-	{
-		$this->sql='';
-		if($this->newRecord===true)
-		{
-			$keys=implode('`,`', array_keys($this->record));
-			$values=array_values($this->record);
-			if($this->auto_escape) foreach($values as $k=>$v) $values[$k]=addslashes($v);
-			$values=implode('\',\'', $values);
-			$this->sql.="INSERT INTO `{$this->table}` ( `$keys` ) values ( '$values' )";
-			return;
-		}
-		if($this->bDeleted==true)
-		{
-			$this->sql='DELETE FROM `'.$this->table.'` WHERE `'.$this->idname.'`=\''.$this->record[$this->idname].'\' LIMIT 1';
-		}else{
-			if(count($this->updateList)==0) return;
-			$this->sql='UPDATE `'.$this->table.'` SET ';
-			$tempUpdate=array();
-			foreach($this->updateList as $name => $v)
-			{
-				if(!$v) continue;
-				if($this->auto_escape) $tempUpdate[]=isset($this->record[$name]) ? " `$name`='".addslashes($this->record[$name])."'" : " `$name`=NULL";
-				else 	$tempUpdate[]=isset($this->record[$name]) ? " `$name`='{$this->record[$name]}'" : " `$name`=NULL";
+		$where=" WHERE ";
+		$conditions=array();
+		foreach($this->pks as $pk) {
+			if($this->data[$pk]===NULL) {
+				$conditions[]="`".$this->db->real_escape_string($pk)."` IS NULL";
+				continue;
 			}
-			
-			$this->sql.=implode(',',$tempUpdate);
-			$this->sql.=' WHERE `'.$this->idname.'`=\''.$this->record[$this->idname].'\' LIMIT 1';
+			$param_key=':p'.count($this->params);
+			$this->params[$param_key]=$this->data[$pk];
+			$conditions[]="`".$this->db->real_escape_string($pk)."`=$param_key";
+		}
+		$where.=implode(' AND ',$conditions);
+		return $where;
+	}
+	
+	
+	public function commit()
+	{
+		if($this->has_committed) return;
+		$this->params=array();
+		if($this->is_deleted){
+			$where=$this->get_where();
+			$sql="DELETE FROM `{$this->table}` $where LIMIT 1;";
+			$this->db->query($sql,$this->params);
+			$this->updated_fields=array();
+			$this->has_committed=true;
+			return;
+		}else if($this->is_new_record){
+			if(empty($this->updated_fields)){
+				$this->updated_fields=array();
+				$this->has_committed=true;
+				return;
+			}
+			$keys=array();
+			$values=array();
+			foreach($this->updated_fields as $u_field)
+			{
+				$keys[]='`'.$this->db->real_escape_string($u_field).'`';
+				if($this->data[$u_field]===NULL) $values[]='NULL';
+				else {
+					$param_key='@:p'.count($this->params).':';
+					$values[]="$param_key";
+					$this->params[$param_key]=$this->data[$u_field];
+				}
+			}
+			$keys=implode(',',$keys);
+			$values=implode(',',$values);
+			$sql="INSERT INTO `{$this->table}` ($keys) VALUES ($values);";
+			$this->db->query($sql,$this->params);
+			$this->updated_fields=array();
+			$this->has_committed=true;
+			return;
+		}else{
+			if(empty($this->updated_fields)){
+				$this->updated_fields=array();
+				$this->has_committed=true;
+				return;
+			}
+			$changes=array();
+			$change='';
+			$values=array();
+			foreach($this->updated_fields as $u_field)
+			{
+				$change='`'.$this->db->real_escape_string($u_field).'`';
+				if($this->data[$u_field]===NULL) $change.='=NULL';
+				else {
+					$param_key="@:p".count($this->params).':';
+					$change.="=$param_key";
+					$this->params[$param_key]=$this->data[$u_field];
+				}
+				$changes[]=$change;
+			}
+			$changes=implode(',',$changes);
+			$where=$this->get_where();
+			$sql="UPDATE `{$this->table}` SET $changes $where LIMIT 1;";
+			$this->db->query($sql,$this->params);
+			$this->updated_fields=array();
+			$this->has_committed=true;
+			return;
 		}
 	}
 	
-	public function getSqlStatement($table)
-	{
-		$this->table=$table;
-		$this->compileSql();
-		return $this->sql;
-	}
 
 	
 	public function delete()
 	{
-		$this->bDeleted=true;
+		$this->is_deleted=true;
+		$this->has_committed=false;
 	}
 	
 	public function update()
 	{
-		if($this->bIfUpdate===true) return;
-		$this->bIfUpdate=true;
-		$this->sql=$this->getSqlStatement($this->table);
-		if(!empty($this->sql)) $this->db->query($this->sql);
-		if($this->newRecord===true && $this->bIfGetInsertId===false)
-		{
-			$this->id=$this->db->insert_id();
-			$this->bIfGetInsertId=true;
-		}
-		
+		$this->commit();
 	}
+	
+	
 }
 
 

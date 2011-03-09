@@ -15,6 +15,8 @@ class CSearchOption
 	public $unequal;
 	public $equal_value;
 	public $in;
+	
+	public $param;
 
 	static function addQuotaSign(&$v,$k){$v="'".addslashes($v)."'";}
 
@@ -25,6 +27,7 @@ class CSearchOption
 			if(is_array($this->in)) { array_walk($this->in,'CSearchOption::addQuotaSign'); $tempStr=implode(',',$this->in); return " `{$this->name}` IN ($tempStr) ";}
 			else return " `{$this->name}` IN ($this->in) ";
 		}
+		if(isset($this->param)) return "`{$this->name}` ".addslashes($this->param);
 		if(isset($this->equal_value)) return "`{$this->name}`={$this->equal_value}";
 		if(isset($this->equal)) return "`{$this->name}`='".addslashes($this->equal)."'";
 		if(isset($this->unequal)) return "`{$this->name}`!='".addslashes($this->unequal)."'";
@@ -62,8 +65,10 @@ class CSearcher implements ArrayAccess
 	private $tableSet=array();
 	private $fetchDataSet='*';
 	
-	private $bIfCompiled=false;
+	public $extra_condition='';
 	
+	private $bIfCompiled=false;
+	private $pks;
 	
 	function __construct($table)
 	{
@@ -163,6 +168,7 @@ class CSearcher implements ArrayAccess
 			if(!empty($this->andSearcherText)) $whereOption.=' AND '.$this->andSearcherText;
 			if(!empty($this->orSearcherText)) $whereOption.=' OR '.$this->orSearcherText;
 		}else $whereOption.=$this->searchOptionText;
+		if(!empty($this->extra_condition)) $whereOption.=$whereOption?' AND '.$this->extra_condition:$this->extra_condition;
 		if(!empty($whereOption)) $sql.=' WHERE '.$whereOption;
 		$this->db->query($sql);
 	}
@@ -182,7 +188,7 @@ class CSearcher implements ArrayAccess
 			if(!empty($this->andSearcherText)) $whereOption.=' AND '.$this->andSearcherText;
 			if(!empty($this->orSearcherText)) $whereOption.=' OR '.$this->orSearcherText;
 		}else $whereOption.=$this->searchOptionText;
-		
+		if(!empty($this->extra_condition)) $whereOption.=$whereOption?' AND '.$this->extra_condition:$this->extra_condition;
 		if(!empty($whereOption)) $this->sql.=' WHERE '.$whereOption;
 		
 		$this->countSql="SELECT COUNT(*) FROM `{$this->table}` ";
@@ -190,11 +196,16 @@ class CSearcher implements ArrayAccess
 		
 		if(!empty($this->orderBy)) 
 		{
-			if(!is_array($this->orderBy)) $temp_orderby=str_replace(',','`,`',$this->orderBy);
-			else $temp_orderby=implode('`,`',$this->orderBy);
-			$this->sql.=" ORDER BY `{$temp_orderby}`";
+			if(!is_array($this->orderBy)) {
+				$temp_orderby=str_replace(',','`,`',$this->orderBy);
+				$this->sql.=" ORDER BY `{$temp_orderby}`";
+			}else {
+				$temp_orderby=implode(',',$this->orderBy);
+				$this->sql.=" ORDER BY {$temp_orderby}";
+			}
+			
 		}
-		if(!empty($this->orderDirection)) 
+		if(!empty($this->orderDirection) && !is_array($this->orderBy) )
 		{
 			if(strtolower($this->orderDirection)=='desc') $this->sql.=" DESC";
 			else  $this->sql.=" ASC";
@@ -267,46 +278,31 @@ class CSearcher implements ArrayAccess
 			$this->sql.=" LIMIT {$this->limit}";
 		}
 		if(empty($this->sql)) return array();
-		//return $this->db->activeRecordQuery($this->sql);
+
 		if(!isset($this->records))
 		{
 			$query=$this->db->query($this->sql);
 			if($query===false) return false;
-			$num=mysql_num_fields($query);
-			$tableSet=array();
+			$this->pks=array();
+			mysql_field_seek($query,0);
+			while(1)
+			{
+				$meta=mysql_fetch_field($query);
+				if(!$meta) break;
+				if($meta->primary_key) $pks[]=$meta->name;
+			}
 			
-			for($i=0;$i<$num;$i++)
-			{
-				mysql_field_seek ($query,$i);
-				$obj=mysql_fetch_field($query,$i);
-				$tableSet[$obj->table]['collist'][$obj->name]=array(
-														'default' => $obj->def,
-														'primary_key' => $obj->primary_key);
-			}
-			foreach($tableSet as $key => $value)
-			{
-				foreach($value['collist'] as $k => $v)
-				{
-					if($v['primary_key']==1)
-					{
-						$tableSet[$key]['primarykeyName']=$k;
-					}
-					
-				}
-				if(!isset($tableSet[$key]['primarykeyName'])) throw new RuntimeException('Can\'t load data set without primary key from table:'.$key);
-			}
-			$this->tableSet=$tableSet;
 			$records=array();
 			$this->records=array();
 			while($row=mysql_fetch_array($query,MYSQL_ASSOC)) 
 			{
 				$this->records[]=$row;
-				$records[]=new CActiveRecord($tableSet,$row);
+				$records[]=new CActiveRecord($this->table,$this->pks,$row);
 			}
 			return $records;
 		}else{
 			$records=array();
-			foreach($this->records as $r) $records[]=new CActiveRecord($this->tableSet,$this->records);
+			foreach($this->records as $r) $records[]=new CActiveRecord($this->table,$this->pks,$this->records);
 			return $records;
 		}
 	}

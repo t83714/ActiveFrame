@@ -3,17 +3,32 @@ if(!defined('IN_APP')) {
 	exit('Access Denied');
 }
 
+function is_uuid($guid) {
+	if(strlen($guid) != 36) return false;
+	if(preg_match("/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/i", $guid)) return true;
+	return false;
+}
+
+function uuid()
+{
+    return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+        mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
+        mt_rand( 0, 0x0fff ) | 0x4000,
+        mt_rand( 0, 0x3fff ) | 0x8000,
+        mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ) );
+}
+
 function paserControllerPath()
 {
-	
 	global $APP_ENV;
 	$pathArray=explode('/',$_GET['path']);
 	$num=count($pathArray);
 	if($num<2)
 	{
 		$APP_ENV['controllerFile']=APP_CTR_ROOT.'C_'.$pathArray[0].'.php';
+		$APP_ENV['requestPath']='/';
 		$APP_ENV['controllerName']=$pathArray[0];
-		$APP_ENV['RequestMethod']='index';
+		$APP_ENV['requestMethod']=$APP_ENV['RequestMethod']='index';
 		return;
 	}
 	$possibleCtrName=$pathArray[$num-2];
@@ -25,13 +40,14 @@ function paserControllerPath()
 	if(is_file($APP_ENV['controllerFile'])) 
 	{
 		$APP_ENV['controllerName']=$possibleCtrName;
-		$APP_ENV['RequestMethod']=$possibleMethodName;
+		$APP_ENV['requestMethod']=$APP_ENV['RequestMethod']=$possibleMethodName;
+		$APP_ENV['requestPath']='/'.$tempPathStr;
 		return;
-	}else
-	{
+	}else{
 		$APP_ENV['controllerFile']=APP_CTR_ROOT.$tempPathStr.'/'.$possibleCtrName.'/C_'.$possibleMethodName.'.php';
 		$APP_ENV['controllerName']=$possibleMethodName;
-		$APP_ENV['RequestMethod']='index';
+		$APP_ENV['requestMethod']=$APP_ENV['RequestMethod']='index';
+		$APP_ENV['requestPath']=($tempPathStr?'/'.$tempPathStr:'').'/'.$possibleCtrName;
 		return;
 	}
 }
@@ -215,7 +231,7 @@ function loadwidget($file,$data=null,$ifCaptureOutput=false)
 	if(!is_file($objfile) || @filemtime($tplfile) > @filemtime($objfile)) parse_template($file,'widget');
 	if($data!==null && is_array($data)) $r=extract($data,EXTR_PREFIX_INVALID,'widget_arg');
 	if($data!==null && !is_array($data)) $widget_arg_0=$data;
-	unset($data);
+	//unset($data);
 	if($ifCaptureOutput===false)
 	{
 		include $objfile;
@@ -264,9 +280,8 @@ function loadmodel($path)
 {
 	global $APP_ENV;
 	$file=$APP_ENV['modelRoot'].$path.'.php';
-	
 	if(is_file($file)) include_once($file);
-	else exit("Model $file can\'t find.");
+	else throw new C404Exception($path,C404Exception::MODEL);
 }
 
 function loadException($path)
@@ -275,7 +290,7 @@ function loadException($path)
 	$file=APP_ROOT.'exceptions/'.$path.'.php';
 	if(is_file($APP_ENV['exceptionRoot'].$path.'.php')) include_once($APP_ENV['exceptionRoot'].$path.'.php');
 	elseif(is_file($file)) include_once($file);
-	else exit("Exceptions $path can't find.");
+	else throw new C404Exception($path,C404Exception::MODEL);
 }
 
 function loadlib($path)
@@ -284,7 +299,7 @@ function loadlib($path)
 	$file=APP_ROOT.'libraries/'.$path.'.php';
 	if(is_file($APP_ENV['libRoot'].$path.'.php')) include_once($APP_ENV['libRoot'].$path.'.php');
 	elseif(is_file($file)) include_once($file);
-	else exit("lib $path can't find.");
+	else throw new C404Exception($path,C404Exception::LIB);
 }
 
 function loadhelper($path)
@@ -293,7 +308,7 @@ function loadhelper($path)
 	$file=APP_ROOT.'helpers/'.$path.'.php';
 	if(is_file($APP_ENV['helperRoot'].$path.'.php')) include_once($APP_ENV['helperRoot'].$path.'.php');
 	elseif(is_file($file)) include_once($file);
-	else exit("helper $path {$APP_ENV['helperRoot']}$path.php can't find.");
+	else throw new C404Exception($path,C404Exception::HELPER);
 }
 
 function loadsnippet($path,$ifOutputPath=true)
@@ -308,7 +323,7 @@ function loadsnippet($path,$ifOutputPath=true)
 	}
 	if(is_file($APP_ENV['snippetRoot'].$path.'.php')) include $APP_ENV['snippetRoot'].$path.'.php';
 	elseif(is_file($file)) include $file;
-	else exit("snippet Root $path can't find.");
+	else throw new C404Exception($path,C404Exception::SNIPPET);
 }
 
 function loadformatter($path)
@@ -317,7 +332,7 @@ function loadformatter($path)
 	$file=APP_ROOT.'formatters/'.$path.'.php';
 	if(is_file($APP_ENV['formatterRoot'].$path.'.php')) include_once($APP_ENV['formatterRoot'].$path.'.php');
 	elseif(is_file($file)) include_once($file);
-	else exit("formatter $path {$APP_ENV['formatterRoot']}$path.php can't find.");
+	else throw new C404Exception($path,C404Exception::FORMATTER);
 	
 }
 
@@ -326,7 +341,7 @@ function loadformatter($path)
 	  global $APP_ENV;
 	  $filename=$APP_ENV['configRoot'].$name.'.config.php';
 	  if(is_file($filename)) return $filename;
-		else exit("config $filename can't find.");
+		else throw new C404Exception($path,C404Exception::CONFIG);
 	}	
 
 	/**
@@ -369,7 +384,7 @@ function output()//reserve for last stage
 	
 }
 
-function redirect($uri = '', $method = 'location',$ifUrl=false)
+function redirect($uri = '',$ifUrl=false,$method = 'location')
 {
 	global $APP_ENV;
 	

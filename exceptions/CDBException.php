@@ -1,21 +1,20 @@
 <?php
 class CDBException extends CAppException
 {
-	public $error;
-	public $errno;
-	public $sql;
-	public $message;
-	public function __construct($errno,$error,$message='',$sql='')
+	const ERR_CONSTRAINT=1451;
+	const ERR_OVER_LIMIT=1114;
+	
+	public $sql='';
+	
+	public function __construct($message,$code=0,$sql='')
 	{
-		$this->error=$error;
-		$this->errno=$errno;
+		parent::__construct($message,$code);
 		$this->sql=$sql;
-		$this->message=$message;
 	}
 	public function handleException()
 	{
 		ob_clean();
-		if($this->errno==1114) exit($this->get_over_limit_page());
+		if($this->code==1114) exit($this->get_over_limit_page());
 		else exit($this->get_error_page());
 	}
 	
@@ -53,16 +52,16 @@ OVERLIMITPAGEEOD;
 	{
 			$timestamp = time();
 			if($this->message) {
-				$errmsg = "<b>Application Database Error info</b>: {$this->message}\n\n<br/>";
+				$errmsg = "<b>Application Database Error info</b>\n\n<br/>";
 			}
 			$errmsg .= "<b>Time</b>: ".gmdate("Y-n-j g:ia", $timestamp + ($_SERVER['timeoffset'] * 3600))."\n<br/>";
-			//$errmsg .= "<b>Script</b>: ".$_SERVER['PHP_SELF']."\n\n";
 			if($this->sql) {
 				$errmsg .= "<b>SQL</b>: ".htmlspecialchars($this->sql)."\n<br/>";
 			}
-			$errmsg .= "<b>Error</b>:  {$this->error}\n<br/>";
-			$errmsg .= "<b>Errno.</b>:  {$this->errno}<br/>";
-			
+			$errmsg .= "<b>Error</b>:  {$this->message}\n<br/>";
+			$errmsg .= "<b>Errno.</b>:  {$this->code}\n<br/>";
+			//$errmsg .= "<b>File: </b>:  {$this->file}\n<br/>";
+			//$errmsg .= "<b>Line: </b>:  {$this->line}\n<br/>";
 			return $errmsg;
 	}
 	

@@ -59,24 +59,36 @@ class dbstuff {
 	function fetch_array($query, $result_type = MYSQL_ASSOC) {
 		return mysql_fetch_array($query, $result_type);
 	}
-
-	function query($sql, $type = '') {
+	
+	function real_escape_string($str)
+	{
+		return mysql_real_escape_string((string)$str,$this->link);
+	}
+	
+	function query($sql, $params=null, $type = '') 
+	{
 		global $APP_ENV;
-
-		$func = $type == 'UNBUFFERED' && @function_exists('mysql_unbuffered_query') ?
-			'mysql_unbuffered_query' : 'mysql_query';
+		$func = $type == 'UNBUFFERED' && @function_exists('mysql_unbuffered_query') ? 'mysql_unbuffered_query' : 'mysql_query';
+		if(!empty($params) && is_array($params)) {
+			foreach($params as $k=>$v)
+			{
+				if($v===NULL) $params[$k]='NULL';
+				else $params[$k]='\''.mysql_real_escape_string((string)$v,$this->link).'\'';
+			}	
+			$sql=str_replace(array_keys($params),array_values($params),$sql);
+		}
 		if(!($query = $func($sql, $this->link))) {
 			if(in_array($this->errno(), array(2006, 2013)) && substr($type, 0, 5) != 'RETRY') {
 				$this->close();
 				$this->connect($this->dbhost,$this->dbuser,$this->dbpw, $this->dbname, $this->pconnect);
-				$query = $this->query($sql, 'RETRY'.$type);
+				$query = $this->query($sql, $params, 'RETRY'.$type);
 			} elseif($type != 'SILENT' && substr($type, 5) != 'SILENT') {
 				$this->halt('MySQL Query Error', $sql);
 			}
 		}
 
 		$this->querynum++;
-		if($APP_ENV['debug']==true) 
+		if($APP_ENV['debug']) 
 		{
 			$APP_ENV['debugInfo']['curSql']=$sql;
 			$APP_ENV['debugInfo']['sqlStack'][]=$sql;
@@ -142,8 +154,7 @@ class dbstuff {
 	{
 		global $APP_ENV;
 		define('CACHE_FORBIDDEN', TRUE);
-		//require_once include APP_ROOT.'./include/dbdrivers/'.$APP_ENV['db_settings'][$APP_ENV['current_db_setting']]['dbdriver'].'/db_error.inc.php';
-		throw (new CDBException($this->errno(),$this->error(),$message,$sql));
+		throw new CDBException($message.":\n<br/>".$this->error(),$this->errno(),$sql);
 	}
 	
 	/*
@@ -175,13 +186,13 @@ class dbstuff {
 	}
 	
 	
-	function fetchResultBySQL($sql,$arg1=null,$arg2=null)
+	function fetchResultBySQL($sql,$params=null,$arg1=null,$arg2=null)
 	{
 		$limtText='';
 		if(isset($arg2)) $limtText=" LIMIT {$arg1},{$arg2}";	
 		elseif (isset($arg1)) $limtText=" LIMIT {$arg1}";
 		$sql.=$limtText;
-		$query=$this->query($sql);
+		$query=$this->query($sql,$params);
 		if($query===false) return false;
 		while($row=mysql_fetch_array($query,MYSQL_ASSOC)) $records[]=$row;
 		if($records==false) $records=array();
