@@ -100,6 +100,12 @@ include APP_ROOT.'./include/CSearcher.class.php';
 
 include APP_ROOT.'./config/system.config.php';
 
+$APP_ENV['default_url_rewrite_ext']=$default_url_rewrite_ext;
+$APP_ENV['url_rewrite']=$url_rewrite;
+$APP_ENV['url_rewrite_directory_name']=$url_rewrite_directory_name;
+unset($url_rewrite);
+unset($default_url_rewrite_ext);
+
 if(isset($time_zone)) date_default_timezone_set($time_zone);
 $APP_ENV['time_zone']=$time_zone;
 unset($time_zone);

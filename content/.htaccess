@@ -1,0 +1,4 @@
+RewriteEngine On
+#RewriteRule ^(?!(\.\./))(.*?)(/$|\.html|\.htm) ../?path=$2 [QSA,NC]
+RewriteRule ^(?!(\.\./))(.*?)(/$|\.([^\.]+)$|$) ../?path=$2&ext=$4 [QSA,NC]
+
