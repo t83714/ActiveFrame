@@ -1,0 +1,17 @@
+<?php
+class C_welcome.php extends CController
+{
+	function __construct()
+	{
+		parent::__construct();
+	}
+	
+	public function index()
+	{
+		/*--
+		Load your lib or model to process reuqest
+		--*/
+		loadview('index.tpl.htm',$data);
+	}
+}
+?>

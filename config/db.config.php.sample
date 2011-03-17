@@ -4,8 +4,8 @@
 $activeGroup='defaultSetting';//---which setting'll be load
 
 $db['defaultSetting']['hostname'] = "localhost";
-$db['defaultSetting']['username'] = "root";
-$db['defaultSetting']['password'] = "";
+$db['defaultSetting']['username'] = "your_username";
+$db['defaultSetting']['password'] = "your_password";
 $db['defaultSetting']['database'] = "your_db_name";
 $db['defaultSetting']['dbdriver'] = "mysql";
 $db['defaultSetting']['pconnect'] = 0;
@@ -13,8 +13,8 @@ $db['defaultSetting']['pconnect'] = 0;
 //----Another setting to be loaded when call function changeDBSetting
 
 $db['db_setting2']['hostname'] = "localhost";
-$db['db_setting2']['username'] = "root";
-$db['db_setting2']['password'] = "";
+$db['db_setting2']['username'] = "your_username";
+$db['db_setting2']['password'] = "your_password";
 $db['db_setting2']['database'] = "your_db_name";
 $db['db_setting2']['dbdriver'] = "mysql";
 $db['db_setting2']['pconnect'] = 0;

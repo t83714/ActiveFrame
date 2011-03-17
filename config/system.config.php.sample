@@ -1,7 +1,7 @@
 <?php
 
 //----default Controller name and default request method name
-$defaultRequestController='login';
+$defaultRequestController='welcome';
 $defaultRequestMethod='index';
 
 //-----if framework works under debug mode
