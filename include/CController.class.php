@@ -13,7 +13,7 @@ class CController
 	* Controller constructor
 	* @author Jacky Jiang
 	**/
-	function CController($auto_start_session=true,$auto_lang_support=true)
+	function CController($auto_lang_support=true,$auto_start_session=false)
 	{
 		if($auto_start_session) SessionManager::start();
 		loadLib('BrowserManager');
