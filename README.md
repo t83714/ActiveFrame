@@ -16,4 +16,5 @@ You should be able to see the welcome page by now.
 
 3. To connect with database, edit `config/db.config.php` with your own settings.
 
-[Welcome](./wiki/Home)
+For more detail, please have a look at [Project Wiki](https://github.com/t83714/ActiveFrame/wiki).
+
