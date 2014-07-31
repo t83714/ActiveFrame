@@ -82,21 +82,24 @@ foreach($_POST as $_key => $_value) $_key{0} != '_' && $_POST[$_key] = escapeSpe
 foreach($_GET as $_key => $_value) $_key{0} != '_' && $_GET[$_key] = escapeSpecialChars($_value);
 
 include APP_ROOT.'./config/db.config.php';
-include APP_ROOT.'./include/dbdrivers/'.$db[$activeGroup]['dbdriver'].'/db_driver.class.php';
+if(!empty($activeGroup) && is_file(APP_ROOT.'./include/dbdrivers/'.$db[$activeGroup]['dbdriver'].'/db_driver.class.php')){
+	include APP_ROOT.'./include/dbdrivers/'.$db[$activeGroup]['dbdriver'].'/db_driver.class.php';
 
-$APP_ENV['db_settings']=$db;
-$APP_ENV['current_db_setting']=$activeGroup;
-$APP_ENV['db_conection_pool']=array();
-
-$APP_ENV['db_conection_pool'][$APP_ENV['current_db_setting']]= new dbstuff;
-$APP_ENV['db_conection_pool'][$APP_ENV['current_db_setting']]->connect($db[$activeGroup]['hostname'],$db[$activeGroup]['username'],$db[$activeGroup]['password'], $db[$activeGroup]['database'], $db[$activeGroup]['pconnect']);
-
-$APP_ENV['db']=$APP_ENV['db_conection_pool'][$APP_ENV['current_db_setting']];
-
-unset($db);
+	$APP_ENV['db_settings']=$db;
+	$APP_ENV['current_db_setting']=$activeGroup;
+	$APP_ENV['db_conection_pool']=array();
+	
+	$APP_ENV['db_conection_pool'][$APP_ENV['current_db_setting']]= new dbstuff;
+	$APP_ENV['db_conection_pool'][$APP_ENV['current_db_setting']]->connect($db[$activeGroup]['hostname'],$db[$activeGroup]['username'],$db[$activeGroup]['password'], $db[$activeGroup]['database'], $db[$activeGroup]['pconnect']);
+	
+	$APP_ENV['db']=$APP_ENV['db_conection_pool'][$APP_ENV['current_db_setting']];
+	
+	unset($db);
+	include APP_ROOT.'./include/CSearcher.class.php';
+}
 unset($activeGroup);
 
-include APP_ROOT.'./include/CSearcher.class.php';
+
 
 include APP_ROOT.'./config/system.config.php';
 
