@@ -55,7 +55,7 @@ else{
 }
 include APP_ROOT.'./include/global.func.php';
 
-include  APP_ROOT.'./config/autoload.config.php';
+@include  APP_ROOT.'./config/autoload.config.php';
 
 if(isset($autoloadJs)) 
 {
@@ -81,7 +81,7 @@ foreach($_COOKIE as $_key => $_value) $_key{0} != '_' && $_COOKIE[$_key] = escap
 foreach($_POST as $_key => $_value) $_key{0} != '_' && $_POST[$_key] = escapeSpecialChars($_value);
 foreach($_GET as $_key => $_value) $_key{0} != '_' && $_GET[$_key] = escapeSpecialChars($_value);
 
-include APP_ROOT.'./config/db.config.php';
+@include APP_ROOT.'./config/db.config.php';
 if(!empty($activeGroup) && is_file(APP_ROOT.'./include/dbdrivers/'.$db[$activeGroup]['dbdriver'].'/db_driver.class.php')){
 	include APP_ROOT.'./include/dbdrivers/'.$db[$activeGroup]['dbdriver'].'/db_driver.class.php';
 
