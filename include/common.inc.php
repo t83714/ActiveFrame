@@ -5,7 +5,7 @@
  * @version 0.1.1
  */
 
-error_reporting(E_ALL ^ E_NOTICE);
+error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
 
 include APP_ROOT.'./include/CAppException.class.php';
 include APP_ROOT.'./include/CModel.class.php';
